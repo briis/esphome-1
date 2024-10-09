@@ -64,9 +64,9 @@ class TS_Point {
   int16_t z;
 };
 
-class FT6236Touchscreen : public Touchscreen, public i2c::I2CDevice {
+class FT6236 : public Touchscreen, public i2c::I2CDevice {
  public:
-  FT6236Touchscreen(void);
+  FT6236(void);
   void debug(void);
   bool begin(uint8_t thresh = FT6236_DEFAULT_THRESHOLD, int8_t sda = -1, int8_t scl = -1);
   uint8_t touched(void);

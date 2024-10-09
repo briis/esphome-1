@@ -19,6 +19,7 @@ MIT license, all text above must be included in any redistribution
 #include "FT6236.h"
 #include "esphome/core/log.h"
 #include <Wire.h>
+#include <Arduino.h>
 
 namespace esphome {
 namespace ft6236 {

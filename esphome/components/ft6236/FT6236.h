@@ -67,7 +67,7 @@ class TS_Point {
   int16_t z;
 };
 
-class FT6236 {
+class FT6236 : public Touchscreen, public i2c::I2CDevice {
  public:
   FT6236(void);
   void debug(void);

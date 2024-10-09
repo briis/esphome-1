@@ -9,7 +9,7 @@ DEPENDENCIES = ["i2c"]
 
 ft6236u_ns = cg.esphome_ns.namespace("ft6236")
 FT6236Touchscreen = ft6236u_ns.class_(
-    "FT6236Touchscreen",
+    "FT6236",
     touchscreen.Touchscreen,
     i2c.I2CDevice,
 )

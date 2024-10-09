@@ -47,7 +47,7 @@ MIT license, all text above must be included in any redistribution
 #define FT6236_CHIPID 0x36   // FT6236 ID
 #define FT6236U_CHIPID 0x64  // FT6236U ID
 
-#define FT6236_DEFAULT_THRESHOLD 128  // Default threshold for touch detection
+static const uint8_t FT6236_DEFAULT_THRESHOLD = 128;  // Default threshold for touch detection
 
 namespace esphome {
 namespace ft6236 {

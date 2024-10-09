@@ -27,7 +27,7 @@ namespace ft6236 {
 FT6236::FT6236() { touches = 0; }
 
 /* Start I2C and check if the FT6236 is found. */
-boolean FT6236::begin(uint8_t thresh, int8_t sda, int8_t scl) {
+bool FT6236::begin(uint8_t thresh, int8_t sda, int8_t scl) {
   if (sda != -1 && scl != -1) {
     Wire.begin(sda, scl);
   } else {

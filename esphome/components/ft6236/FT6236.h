@@ -47,9 +47,9 @@ class TS_Point {
   int16_t z;
 };
 
-class FT6236Component : public Component, public i2c::I2CDevice {
+class FT6236Touchscreen : public Component, public i2c::I2CDevice {
  public:
-  FT6236Component(void);
+  FT6236Touchscreen(void);
 
   void setup() override;
   void loop() override;

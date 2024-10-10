@@ -23,9 +23,9 @@ namespace ft6236 {
 
 static const char *TAG = "ft6236";
 
-FT6236Component::FT6236Component(void) { touches = 0; }
+FT6236Touchscreen::FT6236Touchscreen(void) { touches = 0; }
 
-void FT6236Component::setup() {
+void FT6236Touchscreen::setup() {
   ESP_LOGCONFIG(TAG, "Setting up FT6236...");
 
   // Initialize the I2C device, check the chip ID and vendor ID
@@ -42,7 +42,7 @@ void FT6236Component::setup() {
   }
 }
 
-void FT6236Component::loop() {
+void FT6236Touchscreen::loop() {
   ESP_LOGD(TAG, "Updating FT6236 touch data...");
   uint8_t n = touched();
   if (n > 0) {
@@ -51,7 +51,7 @@ void FT6236Component::loop() {
   }
 }
 
-uint8_t FT6236Component::touched(void) {
+uint8_t FT6236Touchscreen::touched(void) {
   uint8_t n = readRegister8(FT6236_REG_NUMTOUCHES);
   if (n > 2) {
     n = 0;
@@ -59,7 +59,7 @@ uint8_t FT6236Component::touched(void) {
   return n;
 }
 
-TS_Point FT6236Component::getPoint(uint8_t n) {
+TS_Point FT6236Touchscreen::getPoint(uint8_t n) {
   readData();
   if (touches == 0 || n > 1) {
     return TS_Point(0, 0, 0);
@@ -67,7 +67,7 @@ TS_Point FT6236Component::getPoint(uint8_t n) {
   return TS_Point(touchX[n], touchY[n], 1);
 }
 
-void FT6236Component::readData(void) {
+void FT6236Touchscreen::readData(void) {
   uint8_t data[16];
   this->read_bytes(0x00, data, 16);
 
@@ -79,15 +79,15 @@ void FT6236Component::readData(void) {
   }
 }
 
-void FT6236Component::writeRegister8(uint8_t reg, uint8_t val) { this->write_byte(reg, val); }
+void FT6236Touchscreen::writeRegister8(uint8_t reg, uint8_t val) { this->write_byte(reg, val); }
 
-uint8_t FT6236Component::readRegister8(uint8_t reg) {
+uint8_t FT6236Touchscreen::readRegister8(uint8_t reg) {
   uint8_t val;
   this->read_bytes(reg, &val, 1);
   return val;
 }
 
-void FT6236Component::dump_config() {
+void FT6236Touchscreen::dump_config() {
   ESP_LOGCONFIG(TAG, "FT6236:");
   ESP_LOGCONFIG(TAG, "  I2C Address: 0x38");
 }

@@ -42,7 +42,7 @@ void FT6236Component::setup() {
   }
 }
 
-void FT6236Component::update() {
+void FT6236Component::loop() {
   ESP_LOGD(TAG, "Updating FT6236 touch data...");
   uint8_t n = touched();
   if (n > 0) {

@@ -47,12 +47,12 @@ class TS_Point {
   int16_t z;
 };
 
-class FT6236Component : public PollingComponent, public i2c::I2CDevice {
+class FT6236Component : public Component, public i2c::I2CDevice {
  public:
   FT6236Component(void);
 
   void setup() override;
-  void update() override;
+  void loop() override;
   void dump_config() override;
 
   uint8_t touched(void);

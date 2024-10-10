@@ -15,44 +15,43 @@ Written by Limor Fried/Ladyada for Adafruit Industries.
 @section license License
 MIT license, all text above must be included in any redistribution
 */
-
-#include "FT6236.h"
+#include "ft6236.h"
 #include "esphome/core/log.h"
-#include <Wire.h>
-#include <Arduino.h>
 
 namespace esphome {
 namespace ft6236 {
 
-/* New class. */
-FT6236::FT6236() { touches = 0; }
+static const char *TAG = "ft6236";
 
-/* Start I2C and check if the FT6236 is found. */
-bool FT6236::begin(uint8_t thresh, int8_t sda, int8_t scl) {
-  if (sda != -1 && scl != -1) {
-    Wire.begin(sda, scl);
-  } else {
-    Wire.begin();
-  }
+FT6236Component::FT6236Component(void) { touches = 0; }
 
-  // Adjust threshold
-  writeRegister8(FT6236_REG_THRESHHOLD, thresh);
+void FT6236Component::setup() {
+  ESP_LOGCONFIG(TAG, "Setting up FT6236...");
 
-  // Check if our chip has the correct Vendor ID
+  // Initialize the I2C device, check the chip ID and vendor ID
   if (readRegister8(FT6236_REG_VENDID) != FT6236_VENDID) {
-    return false;
-  }
-  // Check if our chip has the correct Chip ID.
-  uint8_t id = readRegister8(FT6236_REG_CHIPID);
-  if ((id != FT6236_CHIPID) && (id != FT6236U_CHIPID) && (id != FT6206_CHIPID)) {
-    return false;
+    ESP_LOGE(TAG, "Failed to find FT6236, wrong vendor ID.");
+    mark_failed();
+    return;
   }
 
-  return true;
+  uint8_t id = readRegister8(FT6236_REG_CHIPID);
+  if (id != FT6236_CHIPID && id != FT6236U_CHIPID && id != FT6206_CHIPID) {
+    ESP_LOGE(TAG, "Wrong chip ID: 0x%02X", id);
+    mark_failed();
+  }
 }
 
-/* Returns the number of touches */
-uint8_t FT6236::touched(void) {
+void FT6236Component::update() {
+  ESP_LOGD(TAG, "Updating FT6236 touch data...");
+  uint8_t n = touched();
+  if (n > 0) {
+    TS_Point point = getPoint(0);
+    ESP_LOGD(TAG, "Touch at: X=%d, Y=%d", point.x, point.y);
+  }
+}
+
+uint8_t FT6236Component::touched(void) {
   uint8_t n = readRegister8(FT6236_REG_NUMTOUCHES);
   if (n > 2) {
     n = 0;
@@ -60,91 +59,45 @@ uint8_t FT6236::touched(void) {
   return n;
 }
 
-/* Get a touch point */
-TS_Point FT6236::getPoint(uint8_t n) {
+TS_Point FT6236Component::getPoint(uint8_t n) {
   readData();
-  if ((touches == 0) || (n > 1)) {
+  if (touches == 0 || n > 1) {
     return TS_Point(0, 0, 0);
-  } else {
-    return TS_Point(touchX[n], touchY[n], 1);
+  }
+  return TS_Point(touchX[n], touchY[n], 1);
+}
+
+void FT6236Component::readData(void) {
+  uint8_t data[16];
+  this->read_bytes(0x00, data, 16);
+
+  touches = data[2] & 0x0F;
+
+  if (touches > 0) {
+    touchX[0] = ((data[3] & 0x0F) << 8) | data[4];
+    touchY[0] = ((data[5] & 0x0F) << 8) | data[6];
   }
 }
 
-void FT6236::readData(void) {
-  uint8_t i2cdat[16];
-  Wire.beginTransmission(FT6236_ADDR);
-  Wire.write((byte) 0);
-  Wire.endTransmission();
+void FT6236Component::writeRegister8(uint8_t reg, uint8_t val) { this->write_byte(reg, val); }
 
-  Wire.requestFrom((byte) FT6236_ADDR, (byte) 16);
-  for (uint8_t i = 0; i < 16; i++)
-    i2cdat[i] = Wire.read();
-
-  touches = i2cdat[0x02];
-  if ((touches > 2) || (touches == 0)) {
-    touches = 0;
-  }
-
-  for (uint8_t i = 0; i < 2; i++) {
-    touchX[i] = i2cdat[0x03 + i * 6] & 0x0F;
-    touchX[i] <<= 8;
-    touchX[i] |= i2cdat[0x04 + i * 6];
-    touchY[i] = i2cdat[0x05 + i * 6] & 0x0F;
-    touchY[i] <<= 8;
-    touchY[i] |= i2cdat[0x06 + i * 6];
-    touchID[i] = i2cdat[0x05 + i * 6] >> 4;
-  }
+uint8_t FT6236Component::readRegister8(uint8_t reg) {
+  uint8_t val;
+  this->read_bytes(reg, &val, 1);
+  return val;
 }
 
-/* Reading a byte from a register */
-uint8_t FT6236::readRegister8(uint8_t reg) {
-  uint8_t x;
-
-  Wire.beginTransmission(FT6236_ADDR);
-  Wire.write((byte) reg);
-  Wire.endTransmission();
-
-  Wire.requestFrom((byte) FT6236_ADDR, (byte) 1);
-  x = Wire.read();
-
-  return x;
+void FT6236Component::dump_config() {
+  ESP_LOGCONFIG(TAG, "FT6236:");
+  ESP_LOGCONFIG(TAG, "  I2C Address: 0x38");
 }
 
-/* Writing a byte to a register */
-void FT6236::writeRegister8(uint8_t reg, uint8_t val) {
-  Wire.beginTransmission(FT6236_ADDR);
-  Wire.write((byte) reg);
-  Wire.write((byte) val);
-  Wire.endTransmission();
-}
+TS_Point::TS_Point(void) : x(0), y(0), z(0) {}
+TS_Point::TS_Point(int16_t x, int16_t y, int16_t z) : x(x), y(y), z(z) {}
 
-/* Debug */
-void FT6236::debug(void) {
-  Serial.print("Vend ID: 0x");
-  Serial.println(readRegister8(FT6236_REG_VENDID), HEX);
-  Serial.print("Chip ID: 0x");
-  Serial.println(readRegister8(FT6236_REG_CHIPID), HEX);
-  Serial.print("Firm V: ");
-  Serial.println(readRegister8(FT6236_REG_FIRMVERS));
-  Serial.print("Point Rate Hz: ");
-  Serial.println(readRegister8(FT6236_REG_POINTRATE));
-  Serial.print("Thresh: ");
-  Serial.println(readRegister8(FT6236_REG_THRESHHOLD));
-}
+bool TS_Point::operator==(TS_Point p1) { return (p1.x == x) && (p1.y == y) && (p1.z == z); }
 
-TS_Point::TS_Point(void) { x = y = z = 0; }
-
-TS_Point::TS_Point(int16_t _x, int16_t _y, int16_t _z) {
-  x = _x;
-  y = _y;
-  z = _z;
-}
-
-/* == comparator between two points */
-bool TS_Point::operator==(TS_Point p1) { return ((p1.x == x) && (p1.y == y) && (p1.z == z)); }
-
-/* != comparator netween two points */
-bool TS_Point::operator!=(TS_Point p1) { return ((p1.x != x) || (p1.y != y) || (p1.z != z)); }
+bool TS_Point::operator!=(TS_Point p1) { return (p1.x != x) || (p1.y != y) || (p1.z != z); }
 
 }  // namespace ft6236
 }  // namespace esphome
